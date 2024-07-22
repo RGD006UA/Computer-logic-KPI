@@ -26,7 +26,7 @@ struct bit
 
 	std::string sign;
 
-	bit(uint _mark, uint _value);
+	bit(uint _mark, uint _value, std::string _sign);
 
 	bit operator~() const;
 
@@ -42,7 +42,10 @@ class bitset
  public:
 	bitset();
 
-	bitset(const std::vector<uint>& bit_values, std::pair<uint, uint> operators, uint inverting_step);
+	bitset(const std::vector<uint>& bit_values,
+		   const std::vector<std::string>& signs,
+		   std::pair<uint,uint> operators,
+		   uint inverting_step);
 
 	~bitset() = default;
 
@@ -72,7 +75,7 @@ class bitset
 
 	bool isLastBitOperator();
 
-	void pushBit(uint mark, uint value);
+	void pushBit(uint mark, uint value, const std::string& sign);
 };
 
 // nf = normal function
@@ -92,7 +95,7 @@ class nf
 
 	bitset& operator[](const size_t& index);
 
-	uint& operator()(const size_t& index_bitset, const size_t& index_bit);
+	bit& operator()(const size_t& index_bitset, const size_t& index_bit);
 
 	void invert(bool flag_write);
 

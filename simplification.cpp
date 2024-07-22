@@ -107,10 +107,8 @@ void Simplification::printTable()
 
 void Simplification::makeNF(uint function)
 {
-	auto function_compare = function ? [](uint value) -> bool
-	{ return value; } :
-							[](uint value) -> bool
-							{ return !value; };
+	auto function_compare = function ? [](uint value) -> bool { return value; } :
+												   [](uint value) -> bool { return !value; };
 
 	std::cout << std::string_view(function ? "DDNF:" : "DKNF:") << std::endl;
 
@@ -121,7 +119,7 @@ void Simplification::makeNF(uint function)
 			if (function_compare(bit_row[function_i + m_arguments.size()]))
 			{
 				bitset tmp(std::vector<uint>{ begin(bit_row),
-											  begin(bit_row) + m_arguments.size() },
+											  begin(bit_row) + m_arguments.size() }, m_arguments,
 					bitset::getOperatorsFromFunction(function), 0);
 				nf_arr[function_i].pushBitSet(tmp);
 			}
@@ -144,7 +142,6 @@ void Simplification::invertAllNF()
 	for (size_t i = 0; i < m_functions.size(); i++)
 	{
 		nf_arr[i].invert(true);
-
 	}
 };
 

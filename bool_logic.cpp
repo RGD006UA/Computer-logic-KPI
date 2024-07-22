@@ -4,7 +4,7 @@
 #include <ranges>
 #include <algorithm>
 
-// TODO: проверить написания текста в битах найти либу, которая печатает TeX; nf написать какой вид функции это
+// TODO: Find lib, which can write in TeX; rm boolean or value in struct bit
 
 // bit -----------------------------------------------------------------------------------------------------------------
 
@@ -19,7 +19,7 @@ std::ostream& operator<<(std::ostream& out, const bit& b)
 		out << "v";
 		break;
 	case VALUE:
-		out << static_cast<uint>(b.value);
+		out << (b.value ? "" : "!") << b.sign;
 		break;
 	case NONE:
 		break;
@@ -28,7 +28,8 @@ std::ostream& operator<<(std::ostream& out, const bit& b)
 	return out;
 }
 
-bit::bit(uint _mark, uint _value)
+bit::bit(uint _mark, uint _value, std::string sign)
+	: sign(std::move(sign))
 {
 	if (_mark == VALUE)
 	{
@@ -47,16 +48,16 @@ bit bit::operator~() const
 	switch (bool_operator)
 	{
 	case AND:
-		return { OR, !boolean };
+		return { OR, !boolean, sign };
 	case OR:
-		return { AND, !boolean };
+		return { AND, !boolean, sign };
 	case VALUE:
-		return { VALUE, !value };
+		return { VALUE, !value, sign };
 	case NONE:
-		return { NONE, !boolean };
+		return { NONE, !boolean, sign };
 	}
 
-	return { 0, 0 };
+	return { 0, 0, "" };
 }
 
 // bitset --------------------------------------------------------------------------------------------------------------
@@ -123,11 +124,11 @@ void bitset::invert(bool flag_write = false)
 	}
 }
 
-void bitset::pushBit(uint mark, uint value)
+void bitset::pushBit(uint mark, uint value, const std::string& sign = "")
 {
 //	assert(mark != VALUE && isLastBitOperator() && "last bit was bool_operator");
 
-	m_bits.emplace_back(mark, value);
+	m_bits.emplace_back(mark, value, sign);
 }
 
 bool bitset::isLastBitOperator()
@@ -171,21 +172,22 @@ std::string bitset::getOperator(const bitset& b_set)
 }
 
 bitset::bitset(const std::vector<uint>& bit_values,
-	std::pair<uint, uint> operators,
-	uint inverting_step)
+			   const std::vector<std::string>& signs,
+			   std::pair<uint, uint> operators,
+			   uint inverting_step)
 	: m_inverting_step(inverting_step)
 {
 	size_t index_sign = 0;
 	for (auto bit = cbegin(bit_values); bit != cend(bit_values); bit++)
 	{
-		m_bits.emplace_back(VALUE, *bit);
+		m_bits.emplace_back(VALUE, *bit, signs[index_sign++]);
 		if (bit != cend(bit_values) - 1)
 		{
-			m_bits.emplace_back(operators.first, IS);
+			m_bits.emplace_back(operators.first, IS, "");
 		}
 
 	}
-	m_bits.emplace_back(operators.second, IS);
+	m_bits.emplace_back(operators.second, IS, "");
 }
 
 bitset::bitset()
@@ -244,7 +246,7 @@ void nf::printOperatorsNF()
 
 void nf::makeLastBitsetBitNone(uint boolean_operator)
 {
-	m_bitsets.back().getLastBit() = { NONE, boolean_operator };
+	m_bitsets.back().getLastBit() = { NONE, boolean_operator, "" };
 }
 
 nf::nf(uint function)
@@ -258,64 +260,70 @@ void nf::setFunction(uint function)
 	assert(function <= 2 && "the code of function is more than 2");
 	m_function = { function };
 }
-uint& nf::operator()(const size_t& index_bitset, const size_t& index_bit)
+// ATTENTION: it must be checked
+bit& nf::operator()(const size_t& index_bitset, const size_t& index_bit)
 {
-	assert(index_bitset < m_bitsets.size() && index_bit < m_bitsets[index_bitset].size());
-
+	assert(index_bitset < m_bitsets.size() && index_bit < this->operator[](index_bitset).size());
+	return this->operator[](index_bitset)[index_bit];
 }
+
 bitset& nf::operator[](const size_t& index)
 {
 	assert(index < m_bitsets.size());
-	return std::ranges::find();
+	for (const auto& [i, bitset_find] : std::views::enumerate(m_bitsets))
+	{
+		if (i == index)
+			return bitset_find;
+	}
 }
 
 // test ----------------------------------------------------------------------------------------------------------------
 
 void testBoolLogic()
 {
-//	bitset bits_1, bits_2;
-//
-//	bits_1.pushBit(VALUE, 1);
-//	bits_1.pushBit(AND, IS);
-//	bits_1.pushBit(VALUE, 1);
-//	bits_1.pushBit(AND, IS);
-//	bits_1.pushBit(VALUE, 1);
-//	bits_1.pushBit(OR, IS);
-//
-//	std::cout << bits_1 << std::endl;
+	bitset bits_1, bits_2;
 
-//	bits_2.pushBit(VALUE, 0);
-//	bits_2.pushBit(AND, IS);
-//	bits_2.pushBit(VALUE, 0);
-//	bits_2.pushBit(AND, IS);
-//	bits_2.pushBit(VALUE, 1);
-//	bits_2.pushBit(NONE, IS);
-//
-//	nf nf_1;
-//
-//	nf_1.pushBitSet(bits_1);
-//	nf_1.pushBitSet(bits_2);
-//
-//	std::cout << nf_1 << std::endl;
-//
-//	nf_1.invert(true);
-//
-//	std::cout << nf_1 << std::endl;
-//
-//	nf_1.invert(true);
-//
-//	std::cout << nf_1 << std::endl;
-//
-//	nf_1.invert(true);
-//
-//	std::cout << nf_1 << std::endl;
-//
-//	nf_1.invert(true);
-//
-//	std::cout << nf_1 << std::endl;
-//
-//	nf_1.invert(true);
-//
-//	std::cout << nf_1 << std::endl;
+	bits_1.pushBit(VALUE, 1, "x1");
+	bits_1.pushBit(AND, IS);
+	bits_1.pushBit(VALUE, 1, "x2");
+	bits_1.pushBit(AND, IS);
+	bits_1.pushBit(VALUE, 1, "x3");
+	bits_1.pushBit(OR, IS);
+
+	std::cout << bits_1 << std::endl;
+
+	bits_2.pushBit(VALUE, 0, "x1");
+	bits_2.pushBit(AND, IS);
+	bits_2.pushBit(VALUE, 0, "x2");
+	bits_2.pushBit(AND, IS);
+	bits_2.pushBit(VALUE, 1, "x3");
+	bits_2.pushBit(NONE, IS);
+
+	nf nf_1;
+
+	nf_1.pushBitSet(bits_1);
+	nf_1.pushBitSet(bits_2);
+
+	std::cout << nf_1 << std::endl;
+
+	nf_1.invert(true);
+
+	std::cout << nf_1 << std::endl;
+
+	nf_1.invert(true);
+
+	std::cout << nf_1 << std::endl;
+
+	nf_1.invert(true);
+
+	std::cout << nf_1 << std::endl;
+
+	nf_1.invert(true);
+
+	std::cout << nf_1 << std::endl;
+
+	nf_1.invert(true);
+
+	std::cout << nf_1 << std::endl;
 }
 
